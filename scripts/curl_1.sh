@@ -5,7 +5,7 @@ curl -X POST http://localhost:4444 \
     -d "{
             \"action\": \"answer\",
             \"session-id\": 1,
-            \"answer\": 1
+            \"answer\": \"1\"
 
         }"
 
