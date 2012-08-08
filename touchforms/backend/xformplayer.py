@@ -44,11 +44,15 @@ class global_state_mgr:
     def __init__(self):
         self.lock = threading.Lock()
     
-    def new_session(self, xfsess):
-        with self.lock:
-            self.session_id_counter += 1
-            self.session_cache[self.session_id_counter] = xfsess
-        return self.session_id_counter
+    def new_session(self, xfsess, sess_id=None):
+        if sess_id is None:
+            with self.lock:
+                self.session_id_counter += 1
+                self.session_cache[self.session_id_counter] = xfsess
+            return self.session_id_counter
+        else:
+            self.session_cache[sess_id] = xfsess
+            return sess_id
     
     def get_session(self, session_id):
         with self.lock:
@@ -479,7 +483,7 @@ def get_loader(spec):
     }[type]
 
 
-def open_form(form_spec, inst_spec=None, lang=None, extensions=[], session_data={}, nav_mode='prompt', api_auth=None):
+def open_form(form_spec, inst_spec=None, lang=None, extensions=[], session_data={}, nav_mode='prompt', api_auth=None, sess_id=None):
     try:
         xform_xml = get_loader(form_spec)()
         instance_xml = get_loader(inst_spec)()
@@ -487,16 +491,17 @@ def open_form(form_spec, inst_spec=None, lang=None, extensions=[], session_data=
         return {'error': str(e)}
 
     xfsess = XFormSession(xform_xml, instance_xml, init_lang=lang, session_data=session_data, extensions=extensions, nav_mode=nav_mode, api_auth=api_auth)
-    sess_id = global_state.new_session(xfsess)
+    sess_id = global_state.new_session(xfsess, sess_id)
     return xfsess.response({'session_id': sess_id, 'title': xfsess.form_title(), 'langs': xfsess.get_locales()})
 
 def answer_question (session_id, answer, ix):
     with global_state.get_session(session_id) as xfsess:
         result = xfsess.answer_question(answer, ix)
         if result['status'] == 'success':
-            return xfsess.response({'status': 'accepted'})
+            return xfsess.response({'status': 'accepted', 'session_id': session_id})
         else:
             result['status'] = 'validation-error'
+            result['session_id'] = session_id
             return xfsess.response(result, no_next=True)
 
 def edit_repeat (session_id, ix):

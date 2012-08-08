@@ -146,9 +146,10 @@ def handle_request (content, **kwargs):
                 except KeyError:
                     pass
 
+            session_id = content.get("session-id", None)
             session_data = content.get("session-data", {})
             return xformplayer.open_form(form_spec, inst_spec,
-                                         content.get('lang'), kwargs.get('extensions', []), session_data, nav_mode, content.get('hq_auth'))
+                                         content.get('lang'), kwargs.get('extensions', []), session_data, nav_mode, content.get('hq_auth'), session_id)
 
         elif action == 'edit-form':
             return {'error': 'unsupported'}
